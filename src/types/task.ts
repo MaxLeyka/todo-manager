@@ -6,10 +6,10 @@ export interface Task {
   isCompleted: boolean;
 }
 
-export interface GetAllTasks {
-  isImportant: boolean;
-  name_like: string;
-  isCompleted: boolean;
+export interface TaskFilter {
+  isImportant?: boolean;
+  name_like?: string;
+  isCompleted?: boolean;
 }
 
 export interface CreateTask {
@@ -19,16 +19,9 @@ export interface CreateTask {
   isCompleted: boolean;
 }
 
-export interface GetTask {
-  id: number;
-}
-
 export interface UpdateTask {
-  id: number;
-}
-export interface DeleteTask {
-  id: number;
-}
-export interface Error {
-  error: string;
+  name?: string;
+  info?: string;
+  isImportant?: boolean;
+  isCompleted?: boolean;
 }
