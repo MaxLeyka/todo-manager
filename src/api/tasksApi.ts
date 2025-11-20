@@ -1,13 +1,13 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { BASE_API } from 'constants/api';
-import { CreateTask, Task, TaskFilter, UpdateTask } from 'types/task';
+import { CreateTask, Task, TaskFilterParams, UpdateTask } from 'types/task';
 
 export const tasksApi = createApi({
   reducerPath: 'tasksApi',
   baseQuery: fetchBaseQuery({ baseUrl: BASE_API }),
   tagTypes: ['Task'],
   endpoints: (builder) => ({
-    getAllTasks: builder.query<Task[], TaskFilter>({
+    getAllTasks: builder.query<Task[], TaskFilterParams>({
       query: (params) => ({
         url: 'tasks',
         method: 'GET',

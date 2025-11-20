@@ -6,7 +6,7 @@ export interface Task {
   isCompleted: boolean;
 }
 
-export interface TaskFilter {
+export interface TaskFilterParams {
   isImportant?: boolean;
   name_like?: string;
   isCompleted?: boolean;
