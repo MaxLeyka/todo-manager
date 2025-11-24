@@ -57,7 +57,7 @@ const EditTask: React.FC = () => {
       }).unwrap();
       navigate('/');
     } catch (error) {
-      console.log('Ошибка обновления задачи:', error);
+      //todo добавить обработку ошибок
     }
   };
 
