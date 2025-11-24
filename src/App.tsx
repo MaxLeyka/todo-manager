@@ -5,7 +5,7 @@ import AddTask from 'app/AddTask/AddTask';
 import NotFound from 'app/NotFound/NotFound';
 import EditTask from 'app/EditTask/EditTask';
 
-const App = () => {
+const App = (): JSX.Element => {
   return (
     <BrowserRouter>
       <Routes>
