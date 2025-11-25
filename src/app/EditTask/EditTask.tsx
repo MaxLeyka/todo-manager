@@ -3,8 +3,22 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
 import * as yup from 'yup';
+import { Box, Typography, Checkbox, Button, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { useGetTaskQuery, useUpdateTaskMutation } from 'src/api/tasksApi';
 import { UpdateTask } from 'types/task';
+import { useToast } from 'src/hooks/useToast';
+import {
+  MainContainer,
+  FormContainer,
+  StyledTextField,
+  ButtonGroup,
+  PrimaryButton,
+  SecondaryButton,
+  StyledFormGroup,
+  StyledFormControlLabel,
+  ErrorText,
+  LoadingContainer,
+} from 'src/styles/StyledComponents';
 
 const taskSchema = yup.object({
   name: yup.string().required('Название обязательно'),
@@ -16,6 +30,7 @@ const taskSchema = yup.object({
 const EditTask: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const { toast, showToast, hideToast } = useToast();
 
   const {
     data: task,
@@ -25,7 +40,7 @@ const EditTask: React.FC = () => {
     skip: !taskId,
   });
 
-  const [updateTask, { isLoading: isUpdating, error: updateError }] = useUpdateTaskMutation();
+  const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
 
   const {
     register,
@@ -55,9 +70,12 @@ const EditTask: React.FC = () => {
         id: Number(taskId),
         data: data,
       }).unwrap();
-      navigate('/');
+      showToast('Задача успешно обновлена', 'success');
+      setTimeout(() => {
+        navigate('/');
+      }, 1000);
     } catch (error) {
-      //todo добавить обработку ошибок
+      showToast('Ошибка при обновлении задачи', 'error');
     }
   };
 
@@ -67,92 +85,101 @@ const EditTask: React.FC = () => {
 
   if (!taskId) {
     return (
-      <main>
-        <h1>Ошибка</h1>
-        <p>ID задачи не указан</p>
-        <button onClick={() => navigate('/')}>На главную</button>
-      </main>
+      <MainContainer>
+        <FormContainer elevation={2}>
+          <Typography variant="h1" component="h1" gutterBottom>
+            Ошибка
+          </Typography>
+          <ErrorText variant="body1">ID задачи не указан</ErrorText>
+          <Button variant="contained" onClick={() => navigate('/')}>
+            На главную
+          </Button>
+        </FormContainer>
+      </MainContainer>
     );
   }
 
   if (isLoadingTask) {
     return (
-      <main aria-live="polite" aria-busy="true">
-        <h1>Загрузка задачи...</h1>
-      </main>
+      <MainContainer>
+        <FormContainer elevation={2}>
+          <LoadingContainer>
+            <CircularProgress />
+            <Typography variant="h1" component="h1">
+              Загрузка задачи...
+            </Typography>
+          </LoadingContainer>
+        </FormContainer>
+      </MainContainer>
     );
   }
 
   if (loadError || !task) {
     return (
-      <main>
-        <h1>Ошибка</h1>
-        <p>Задача не найдена</p>
-        <button onClick={() => navigate('/')}>На главную</button>
-      </main>
+      <MainContainer>
+        <FormContainer elevation={2}>
+          <Typography variant="h1" component="h1" gutterBottom>
+            Ошибка
+          </Typography>
+          <ErrorText variant="body1">Задача не найдена</ErrorText>
+          <Button variant="contained" onClick={() => navigate('/')}>
+            На главную
+          </Button>
+        </FormContainer>
+      </MainContainer>
     );
   }
 
   return (
-    <main aria-labelledby="edit-task-heading">
-      <h1 id="edit-task-heading">Редактировать задачу #{taskId}</h1>
+    <MainContainer>
+      <FormContainer elevation={2}>
+        <Typography variant="h1" component="h1" id="edit-task-heading" gutterBottom>
+          Редактировать задачу #{taskId}
+        </Typography>
 
-      {updateError && (
-        <div role="alert" aria-live="assertive">
-          Произошла ошибка при обновлении задачи. Попробуйте еще раз.
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div role="group" aria-labelledby="name-label">
-          <label id="name-label" htmlFor="name-input">
-            Название задачи*
-          </label>
-          <input
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <StyledTextField
+            fullWidth
+            label="Название задачи"
             id="name-input"
-            type="text"
-            aria-invalid={errors.name ? 'true' : 'false'}
-            aria-describedby={errors.name ? 'name-error' : undefined}
+            error={!!errors.name}
+            helperText={errors.name?.message}
             {...register('name')}
+            required
           />
-          {errors.name && (
-            <span id="name-error" role="alert">
-              {errors.name.message}
-            </span>
-          )}
-        </div>
 
-        <div role="group" aria-labelledby="info-label">
-          <label id="info-label" htmlFor="info-textarea">
-            Описание
-          </label>
-          <textarea id="info-textarea" {...register('info')} />
-        </div>
+          <StyledTextField fullWidth label="Описание" id="info-textarea" multiline rows={4} {...register('info')} />
 
-        <div role="group">
-          <label>
-            <input type="checkbox" {...register('isImportant')} />
-            Важная задача
-          </label>
-        </div>
+          <StyledFormGroup>
+            <StyledFormControlLabel control={<Checkbox {...register('isImportant')} />} label="Важная задача" />
+            <StyledFormControlLabel control={<Checkbox {...register('isCompleted')} />} label="Выполнена" />
+          </StyledFormGroup>
 
-        <div role="group">
-          <label>
-            <input type="checkbox" {...register('isCompleted')} />
-            Выполнена
-          </label>
-        </div>
+          <ButtonGroup aria-label="Действия формы">
+            <SecondaryButton type="button" onClick={handleCancel} variant="outlined" disabled={isUpdating}>
+              Отмена
+            </SecondaryButton>
+            <PrimaryButton
+              type="submit"
+              disabled={isUpdating}
+              variant="contained"
+              startIcon={isUpdating ? <CircularProgress size={20} /> : null}>
+              {isUpdating ? 'Сохранение...' : 'Сохранить изменения'}
+            </PrimaryButton>
+          </ButtonGroup>
+        </Box>
+      </FormContainer>
 
-        <div role="group" aria-label="Действия формы">
-          <button type="submit" disabled={isUpdating}>
-            {isUpdating ? 'Сохранение...' : 'Сохранить изменения'}
-          </button>
-          <button type="button" onClick={handleCancel}>
-            Отмена
-          </button>
-        </div>
-      </form>
-    </main>
+      <Snackbar
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={toast.open}
+        autoHideDuration={3000}
+        onClose={hideToast}>
+        <Alert onClose={hideToast} severity={toast.severity} variant="filled">
+          {toast.message}
+        </Alert>
+      </Snackbar>
+    </MainContainer>
   );
 };
 

@@ -3,8 +3,20 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useNavigate } from 'react-router-dom';
+import { Box, Typography, Checkbox, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { useCreateTaskMutation } from 'src/api/tasksApi';
 import { CreateTask } from 'types/task';
+import { useToast } from 'src/hooks/useToast';
+import {
+  MainContainer,
+  FormContainer,
+  StyledTextField,
+  ButtonGroup,
+  PrimaryButton,
+  SecondaryButton,
+  StyledFormGroup,
+  StyledFormControlLabel,
+} from 'src/styles/StyledComponents';
 
 const taskSchema = yup.object({
   name: yup.string().required('Название обязательно'),
@@ -15,7 +27,8 @@ const taskSchema = yup.object({
 
 const AddTask: React.FC = () => {
   const navigate = useNavigate();
-  const [createTask, { isLoading, error: apiError }] = useCreateTaskMutation();
+  const [createTask, { isLoading }] = useCreateTaskMutation();
+  const { toast, showToast, hideToast } = useToast();
 
   const {
     register,
@@ -32,9 +45,12 @@ const AddTask: React.FC = () => {
   const onSubmit = async (data: CreateTask) => {
     try {
       await createTask(data).unwrap();
-      navigate('/');
+      showToast('Задача успешно создана', 'success');
+      setTimeout(() => {
+        navigate('/');
+      }, 1000);
     } catch (error) {
-      console.log('Ошибка создания задачи:', error);
+      showToast('Ошибка при создании задачи', 'error');
     }
   };
 
@@ -43,65 +59,64 @@ const AddTask: React.FC = () => {
   };
 
   return (
-    <main aria-labelledby="add-task-heading">
-      <h1 id="add-task-heading">Добавить задачу</h1>
+    <MainContainer>
+      <FormContainer elevation={2}>
+        <Typography variant="h1" component="h1" id="add-task-heading" gutterBottom>
+          Добавить задачу
+        </Typography>
 
-      {apiError && (
-        <div role="alert" aria-live="assertive">
-          Произошла ошибка при создании задачи. Попробуйте еще раз.
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div role="group" aria-labelledby="name-label">
-          <label id="name-label" htmlFor="name-input">
-            Название задачи*
-          </label>
-          <input
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <StyledTextField
+            fullWidth
+            label="Название задачи"
             id="name-input"
-            type="text"
-            aria-invalid={errors.name ? 'true' : 'false'}
-            aria-describedby={errors.name ? 'name-error' : undefined}
+            error={!!errors.name}
+            helperText={errors.name?.message}
             {...register('name')}
+            required
+            placeholder="Введите название задачи"
           />
-          {errors.name && (
-            <span id="name-error" role="alert">
-              {errors.name.message}
-            </span>
-          )}
-        </div>
 
-        <div role="group" aria-labelledby="info-label">
-          <label id="info-label" htmlFor="info-textarea">
-            Описание
-          </label>
-          <textarea id="info-textarea" {...register('info')} />
-        </div>
+          <StyledTextField
+            fullWidth
+            label="Описание"
+            id="info-textarea"
+            multiline
+            rows={4}
+            {...register('info')}
+            placeholder="Добавьте описание задачи (необязательно)"
+          />
 
-        <div role="group">
-          <label>
-            <input type="checkbox" {...register('isImportant')} />
-            Важная задача
-          </label>
-        </div>
+          <StyledFormGroup>
+            <StyledFormControlLabel control={<Checkbox {...register('isImportant')} />} label="Важная задача" />
+            <StyledFormControlLabel control={<Checkbox {...register('isCompleted')} />} label="Выполнена" />
+          </StyledFormGroup>
 
-        <div role="group">
-          <label>
-            <input type="checkbox" {...register('isCompleted')} />
-            Выполнена
-          </label>
-        </div>
+          <ButtonGroup aria-label="Действия формы">
+            <SecondaryButton type="button" onClick={handleCancel} variant="outlined" disabled={isLoading}>
+              Отмена
+            </SecondaryButton>
+            <PrimaryButton
+              type="submit"
+              disabled={isLoading}
+              variant="contained"
+              startIcon={isLoading ? <CircularProgress size={20} /> : null}>
+              {isLoading ? 'Создание...' : 'Создать задачу'}
+            </PrimaryButton>
+          </ButtonGroup>
+        </Box>
+      </FormContainer>
 
-        <div role="group" aria-label="Действия формы">
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Создание...' : 'Создать задачу'}
-          </button>
-          <button type="button" onClick={handleCancel}>
-            Отмена
-          </button>
-        </div>
-      </form>
-    </main>
+      <Snackbar
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={toast.open}
+        autoHideDuration={3000}
+        onClose={hideToast}>
+        <Alert onClose={hideToast} severity={toast.severity} variant="filled">
+          {toast.message}
+        </Alert>
+      </Snackbar>
+    </MainContainer>
   );
 };
 

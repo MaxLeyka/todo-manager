@@ -1,123 +1,163 @@
 import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Box, Typography, Button, Snackbar, CircularProgress, Alert } from '@mui/material';
 import { useDeleteTaskMutation, useGetAllTasksQuery, useUpdateTaskMutation } from 'src/api/tasksApi';
 import { TaskFilterParams } from 'types/task';
 import TaskFilter from 'app/TaskList/components/TaskFilter/TaskFilter';
 import TaskItem from 'app/TaskList/components/TaskItem/TaskItem';
 import TaskSkeleton from 'app/TaskList/components/TaskSkeleton/TaskSkeleton';
 import TaskEmpty from 'app/TaskList/components/TaskEmpty/TaskEmpty';
+import { useToast } from 'src/hooks/useToast';
+import {
+  MainContainer,
+  PageHeader,
+  TaskGrid,
+  ErrorAlert,
+  RetryButton,
+  HiddenHeading,
+} from 'src/styles/StyledComponents';
 
 const TaskList: React.FC = () => {
   const [filter, setFilter] = useState<TaskFilterParams>({});
-  const { data: tasks, isLoading, isError, error, refetch } = useGetAllTasksQuery(filter);
+  const { data: tasks, isLoading, isError, refetch } = useGetAllTasksQuery(filter);
+  const { toast, showToast, hideToast } = useToast();
 
   const [patchTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
 
   const handleToggleImportant = useCallback(
-    (taskId: number, currentIsImportant: boolean, isCompleted: boolean) => {
-      if (isCompleted) {
-        return;
+    async (taskId: number, currentIsImportant: boolean, isCompleted: boolean) => {
+      if (isCompleted) return;
+
+      try {
+        await patchTask({
+          id: taskId,
+          data: { isImportant: !currentIsImportant },
+        }).unwrap();
+        showToast(!currentIsImportant ? 'Задача отмечена как важная' : 'Задача больше не важная', 'success');
+      } catch (error) {
+        showToast('Ошибка при изменении важности задачи', 'error');
       }
-      patchTask({
-        id: taskId,
-        data: { isImportant: !currentIsImportant },
-      });
     },
-    [patchTask]
+    [patchTask, showToast]
   );
 
   const handleToggleCompleted = useCallback(
-    (taskId: number, currentIsCompleted: boolean) => {
-      patchTask({
-        id: taskId,
-        data: { isCompleted: !currentIsCompleted },
-      });
+    async (taskId: number, currentIsCompleted: boolean) => {
+      try {
+        await patchTask({
+          id: taskId,
+          data: { isCompleted: !currentIsCompleted },
+        }).unwrap();
+        showToast(!currentIsCompleted ? 'Задача выполнена' : 'Задача активна', 'success');
+      } catch (error) {
+        showToast('Ошибка при изменении статуса задачи', 'error');
+      }
     },
-    [patchTask]
+    [patchTask, showToast]
   );
 
   const handleDelete = useCallback(
-    (taskId: number) => {
-      deleteTask(taskId);
+    async (taskId: number) => {
+      try {
+        await deleteTask(taskId).unwrap();
+        showToast('Задача успешно удалена', 'success');
+      } catch (error) {
+        showToast('Ошибка при удалении задачи', 'error');
+      }
     },
-    [deleteTask]
+    [deleteTask, showToast]
   );
 
   if (isLoading) {
     return (
-      <main aria-live="polite" aria-busy="true">
-        <header>
-          <h1>Задачи</h1>
-          <Link to="/add">
-            <button disabled>Создать новое</button>
-          </Link>
-        </header>
+      <MainContainer>
+        <PageHeader>
+          <Typography variant="h1" component="h1">
+            Задачи
+          </Typography>
+          <Button component={Link} to="/add" variant="contained" disabled startIcon={<CircularProgress size={16} />}>
+            Создать задачу
+          </Button>
+        </PageHeader>
         <TaskFilter onFilterChange={setFilter} />
-        <div role="status" aria-label="Загрузка задач">
-          {Array.from({ length: 5 }).map((_, index) => (
+        <TaskGrid>
+          {Array.from({ length: 6 }).map((_, index) => (
             <TaskSkeleton key={index} />
           ))}
-        </div>
-      </main>
+        </TaskGrid>
+      </MainContainer>
     );
   }
 
   if (isError) {
     return (
-      <main>
-        <header>
-          <h1>Задачи</h1>
-          <Link to="/add">
-            <button>Создать новое</button>
-          </Link>
-        </header>
-        <div role="alert" aria-live="assertive">
-          <p>Произошла ошибка при загрузке задач</p>
-          <button onClick={refetch}>Попробовать снова</button>
-          <details>
-            <summary>Подробности ошибки</summary>
-            {error?.toString()}
-          </details>
-        </div>
-      </main>
+      <MainContainer>
+        <PageHeader>
+          <Typography variant="h1" component="h1">
+            Задачи
+          </Typography>
+          <Button component={Link} to="/add" variant="contained">
+            Создать задачу
+          </Button>
+        </PageHeader>
+        <ErrorAlert severity="error">
+          <Typography variant="h6" gutterBottom>
+            Произошла ошибка при загрузке задач
+          </Typography>
+          <RetryButton onClick={() => refetch()} variant="outlined" color="inherit">
+            Попробовать снова
+          </RetryButton>
+        </ErrorAlert>
+      </MainContainer>
     );
   }
 
   return (
-    <main>
-      <header>
-        <h1>Задачи</h1>
-        <Link to="/add">
-          <button>Создать новое</button>
-        </Link>
-      </header>
+    <MainContainer>
+      <PageHeader>
+        <Typography variant="h1" component="h1">
+          Задачи
+        </Typography>
+        <Button component={Link} to="/add" variant="contained">
+          Создать задачу
+        </Button>
+      </PageHeader>
 
       <TaskFilter onFilterChange={setFilter} />
 
-      <section aria-labelledby="tasks-heading">
-        <h2 id="tasks-heading" className="visually-hidden">
+      <Box aria-labelledby="tasks-heading">
+        <HiddenHeading variant="h2" id="tasks-heading">
           Список задач
-        </h2>
+        </HiddenHeading>
 
         {!tasks || tasks.length === 0 ? (
           <TaskEmpty />
         ) : (
-          <ul style={{ listStyle: 'none', padding: 0 }}>
+          <TaskGrid>
             {tasks.map((task) => (
-              <li key={task.id}>
-                <TaskItem
-                  task={task}
-                  onDelete={handleDelete}
-                  onToggleImportant={() => handleToggleImportant(task.id, task.isImportant, task.isCompleted)}
-                  onToggleCompleted={() => handleToggleCompleted(task.id, task.isCompleted)}
-                />
-              </li>
+              <TaskItem
+                key={task.id}
+                task={task}
+                onDelete={handleDelete}
+                onToggleImportant={handleToggleImportant}
+                onToggleCompleted={handleToggleCompleted}
+              />
             ))}
-          </ul>
+          </TaskGrid>
         )}
-      </section>
-    </main>
+      </Box>
+
+      <Snackbar
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        open={toast.open}
+        autoHideDuration={3000}
+        onClose={hideToast}>
+        <Alert onClose={hideToast} severity={toast.severity} variant="filled">
+          {toast.message}
+        </Alert>
+      </Snackbar>
+    </MainContainer>
   );
 };
 

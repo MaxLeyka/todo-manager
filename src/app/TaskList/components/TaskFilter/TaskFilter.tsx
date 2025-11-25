@@ -2,9 +2,11 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { TextField, FormControl, InputLabel, Select, MenuItem, Typography } from '@mui/material';
 import useDebounce from 'src/hooks/useDebounce';
 import { TaskFilterParams } from 'types/task';
 import { TaskFilterProps } from 'app/TaskList/components/TaskFilter/TaskFilter.types';
+import { FilterSection, FilterRow } from 'src/styles/StyledComponents';
 
 const filterSchema = yup.object({
   name_like: yup.string(),
@@ -48,38 +50,49 @@ const TaskFilter: React.FC<TaskFilterProps> = ({ onFilterChange }) => {
   }, [debouncedSearch, formValues.isCompleted, formValues.isImportant, onFilterChange]);
 
   return (
-    <section aria-labelledby="filter-heading">
-      <h3 id="filter-heading">Фильтры и поиск</h3>
+    <FilterSection elevation={1}>
+      <Typography variant="h3" component="h3" id="filter-heading" gutterBottom>
+        Фильтры и поиск
+      </Typography>
 
-      <div role="group" aria-labelledby="search-label">
-        <label id="search-label" htmlFor="search-input">
-          Поиск по названию:
-        </label>
-        <input id="search-input" type="text" placeholder="Введите название задачи..." {...register('name_like')} />
-      </div>
+      <FilterRow>
+        <TextField
+          fullWidth
+          label="Поиск по названию"
+          id="search-input"
+          type="text"
+          placeholder="Введите название задачи..."
+          {...register('name_like')}
+          variant="outlined"
+        />
 
-      <div role="group" aria-labelledby="status-label">
-        <label id="status-label" htmlFor="status-select">
-          Статус выполнения:
-        </label>
-        <select id="status-select" {...register('isCompleted')}>
-          <option value="all">Все задачи</option>
-          <option value="active">Активные</option>
-          <option value="completed">Выполненные</option>
-        </select>
-      </div>
+        <FormControl fullWidth>
+          <InputLabel id="status-select-label">Статус выполнения</InputLabel>
+          <Select
+            labelId="status-select-label"
+            id="status-select"
+            label="Статус выполнения"
+            {...register('isCompleted')}>
+            <MenuItem value="all">Все задачи</MenuItem>
+            <MenuItem value="active">Активные</MenuItem>
+            <MenuItem value="completed">Выполненные</MenuItem>
+          </Select>
+        </FormControl>
 
-      <div role="group" aria-labelledby="importance-label">
-        <label id="importance-label" htmlFor="importance-select">
-          Важность:
-        </label>
-        <select id="importance-select" {...register('isImportant')}>
-          <option value="all">Все задачи</option>
-          <option value="important">Важные</option>
-          <option value="not-important">Неважные</option>
-        </select>
-      </div>
-    </section>
+        <FormControl fullWidth>
+          <InputLabel id="importance-select-label">Важность</InputLabel>
+          <Select
+            labelId="importance-select-label"
+            id="importance-select"
+            label="Важность"
+            {...register('isImportant')}>
+            <MenuItem value="all">Все задачи</MenuItem>
+            <MenuItem value="important">Важные</MenuItem>
+            <MenuItem value="not-important">Неважные</MenuItem>
+          </Select>
+        </FormControl>
+      </FilterRow>
+    </FilterSection>
   );
 };
 
