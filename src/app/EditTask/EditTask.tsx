@@ -4,7 +4,6 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Checkbox, Button, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { useGetTaskQuery, useUpdateTaskMutation } from 'src/api/tasksApi';
-import { UpdateTask } from 'types/task';
 import { useToast } from 'src/hooks/useToast';
 import { editTaskSchema } from 'src/app/EditTask/validation.schema';
 import {
@@ -19,6 +18,7 @@ import {
   ErrorText,
   LoadingContainer,
 } from 'src/styles/StyledComponents';
+import { editTaskData } from 'app/EditTask/EditTask.types';
 
 const EditTask: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -41,7 +41,7 @@ const EditTask: React.FC = () => {
     formState: { errors },
     reset,
     watch,
-  } = useForm<UpdateTask>({
+  } = useForm<editTaskData>({
     resolver: yupResolver(editTaskSchema),
   });
 
@@ -58,11 +58,11 @@ const EditTask: React.FC = () => {
     }
   }, [task, reset]);
 
-  const onSubmit = async (data: UpdateTask) => {
+  const onSubmit = async (data: editTaskData) => {
     if (!taskId) return;
 
     try {
-      const updateData: UpdateTask = {
+      const updateData: editTaskData = {
         name: data.name,
         info: data.info,
         isImportant: data.isImportant,
