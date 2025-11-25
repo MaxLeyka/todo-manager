@@ -14,7 +14,7 @@ export interface TaskFilterParams {
 
 export interface CreateTask {
   name: string;
-  info?: string;
+  info: string;
   isImportant: boolean;
   isCompleted: boolean;
 }
