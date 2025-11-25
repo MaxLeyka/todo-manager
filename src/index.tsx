@@ -5,7 +5,8 @@ import App from 'src/App';
 import { store } from 'src/store/store';
 
 const container = document.getElementById('root');
-const root = createRoot(container as HTMLElement);
+if (!container) throw new Error('Не найден root-элемент');
+const root = createRoot(container);
 
 root.render(
   <React.StrictMode>
