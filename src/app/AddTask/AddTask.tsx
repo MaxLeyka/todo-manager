@@ -1,9 +1,9 @@
 import React from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import * as yup from 'yup';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Checkbox, CircularProgress, Snackbar, Alert } from '@mui/material';
+import { addTaskSchema } from 'src/app/AddTask/validation.schema';
 import { useCreateTaskMutation } from 'src/api/tasksApi';
 import { CreateTask } from 'types/task';
 import { useToast } from 'src/hooks/useToast';
@@ -18,25 +18,20 @@ import {
   StyledFormControlLabel,
 } from 'src/styles/StyledComponents';
 
-const taskSchema = yup.object({
-  name: yup.string().required('Название обязательно'),
-  info: yup.string(),
-  isImportant: yup.boolean().default(false),
-  isCompleted: yup.boolean().default(false),
-});
-
 const AddTask: React.FC = () => {
   const navigate = useNavigate();
-  const [createTask, { isLoading }] = useCreateTaskMutation();
   const { toast, showToast, hideToast } = useToast();
+  const [createTask, { isLoading }] = useCreateTaskMutation();
 
   const {
-    register,
+    control,
     handleSubmit,
     formState: { errors },
   } = useForm<CreateTask>({
-    resolver: yupResolver(taskSchema),
+    resolver: yupResolver(addTaskSchema),
     defaultValues: {
+      name: '',
+      info: '',
       isImportant: false,
       isCompleted: false,
     },
@@ -44,7 +39,14 @@ const AddTask: React.FC = () => {
 
   const onSubmit = async (data: CreateTask) => {
     try {
-      await createTask(data).unwrap();
+      const taskData: CreateTask = {
+        name: data.name,
+        info: data.info,
+        isImportant: data.isImportant,
+        isCompleted: data.isCompleted,
+      };
+
+      await createTask(taskData).unwrap();
       showToast('Задача успешно создана', 'success');
       setTimeout(() => {
         navigate('/');
@@ -62,34 +64,59 @@ const AddTask: React.FC = () => {
     <MainContainer>
       <FormContainer elevation={2}>
         <Typography variant="h1" component="h1" id="add-task-heading" gutterBottom>
-          Добавить задачу
+          Создать новую задачу
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <StyledTextField
-            fullWidth
-            label="Название задачи"
-            id="name-input"
-            error={!!errors.name}
-            helperText={errors.name?.message}
-            {...register('name')}
-            required
-            placeholder="Введите название задачи"
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <StyledTextField
+                {...field}
+                fullWidth
+                label="Название задачи"
+                id="name-input"
+                error={!!errors.name}
+                helperText={errors.name?.message}
+                required
+              />
+            )}
           />
 
-          <StyledTextField
-            fullWidth
-            label="Описание"
-            id="info-textarea"
-            multiline
-            rows={4}
-            {...register('info')}
-            placeholder="Добавьте описание задачи (необязательно)"
+          <Controller
+            name="info"
+            control={control}
+            render={({ field }) => (
+              <StyledTextField
+                {...field}
+                fullWidth
+                label="Описание"
+                id="info-textarea"
+                multiline
+                rows={4}
+                error={!!errors.info}
+                helperText={errors.info?.message}
+                required
+              />
+            )}
           />
 
           <StyledFormGroup>
-            <StyledFormControlLabel control={<Checkbox {...register('isImportant')} />} label="Важная задача" />
-            <StyledFormControlLabel control={<Checkbox {...register('isCompleted')} />} label="Выполнена" />
+            <Controller
+              name="isImportant"
+              control={control}
+              render={({ field }) => (
+                <StyledFormControlLabel control={<Checkbox {...field} checked={field.value} />} label="Важная задача" />
+              )}
+            />
+            <Controller
+              name="isCompleted"
+              control={control}
+              render={({ field }) => (
+                <StyledFormControlLabel control={<Checkbox {...field} checked={field.value} />} label="Выполнена" />
+              )}
+            />
           </StyledFormGroup>
 
           <ButtonGroup aria-label="Действия формы">

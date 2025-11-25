@@ -1,12 +1,12 @@
 import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useParams, useNavigate } from 'react-router-dom';
-import * as yup from 'yup';
 import { Box, Typography, Checkbox, Button, CircularProgress, Snackbar, Alert } from '@mui/material';
 import { useGetTaskQuery, useUpdateTaskMutation } from 'src/api/tasksApi';
 import { UpdateTask } from 'types/task';
 import { useToast } from 'src/hooks/useToast';
+import { editTaskSchema } from 'src/app/EditTask/validation.schema';
 import {
   MainContainer,
   FormContainer,
@@ -19,13 +19,6 @@ import {
   ErrorText,
   LoadingContainer,
 } from 'src/styles/StyledComponents';
-
-const taskSchema = yup.object({
-  name: yup.string().required('Название обязательно'),
-  info: yup.string(),
-  isImportant: yup.boolean(),
-  isCompleted: yup.boolean(),
-});
 
 const EditTask: React.FC = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -43,13 +36,16 @@ const EditTask: React.FC = () => {
   const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
 
   const {
-    register,
+    control,
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<UpdateTask>({
-    resolver: yupResolver(taskSchema),
+    resolver: yupResolver(editTaskSchema),
   });
+
+  const isCompleted = watch('isCompleted');
 
   useEffect(() => {
     if (task) {
@@ -66,9 +62,16 @@ const EditTask: React.FC = () => {
     if (!taskId) return;
 
     try {
+      const updateData: UpdateTask = {
+        name: data.name,
+        info: data.info,
+        isImportant: data.isImportant,
+        isCompleted: data.isCompleted,
+      };
+
       await updateTask({
         id: Number(taskId),
-        data: data,
+        data: updateData,
       }).unwrap();
       showToast('Задача успешно обновлена', 'success');
       setTimeout(() => {
@@ -138,22 +141,65 @@ const EditTask: React.FC = () => {
         </Typography>
 
         <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate>
-          <StyledTextField
-            fullWidth
-            label="Название задачи"
-            id="name-input"
-            error={!!errors.name}
-            helperText={errors.name?.message}
-            {...register('name')}
-            required
+          <Controller
+            name="name"
+            control={control}
+            render={({ field }) => (
+              <StyledTextField
+                {...field}
+                fullWidth
+                label="Название задачи"
+                id="name-input"
+                error={!!errors.name}
+                helperText={errors.name?.message}
+                required
+              />
+            )}
           />
 
-          <StyledTextField fullWidth label="Описание" id="info-textarea" multiline rows={4} {...register('info')} />
+          <Controller
+            name="info"
+            control={control}
+            render={({ field }) => (
+              <StyledTextField
+                {...field}
+                fullWidth
+                label="Описание"
+                id="info-textarea"
+                multiline
+                rows={4}
+                error={!!errors.info}
+                helperText={errors.info?.message}
+                required
+              />
+            )}
+          />
 
           <StyledFormGroup>
-            <StyledFormControlLabel control={<Checkbox {...register('isImportant')} />} label="Важная задача" />
-            <StyledFormControlLabel control={<Checkbox {...register('isCompleted')} />} label="Выполнена" />
+            <Controller
+              name="isImportant"
+              control={control}
+              render={({ field }) => (
+                <StyledFormControlLabel
+                  control={<Checkbox {...field} checked={field.value} disabled={isCompleted} />}
+                  label="Важная задача"
+                />
+              )}
+            />
+            <Controller
+              name="isCompleted"
+              control={control}
+              render={({ field }) => (
+                <StyledFormControlLabel control={<Checkbox {...field} checked={field.value} />} label="Выполнена" />
+              )}
+            />
           </StyledFormGroup>
+
+          {errors.isImportant && (
+            <ErrorText variant="body2" color="error">
+              {errors.isImportant.message}
+            </ErrorText>
+          )}
 
           <ButtonGroup aria-label="Действия формы">
             <SecondaryButton type="button" onClick={handleCancel} variant="outlined" disabled={isUpdating}>
