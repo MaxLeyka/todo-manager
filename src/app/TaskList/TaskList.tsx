@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Box, Typography, Button, Snackbar, CircularProgress, Alert } from '@mui/material';
 import { useDeleteTaskMutation, useGetAllTasksQuery, useUpdateTaskMutation } from 'src/api/tasksApi';
@@ -25,49 +25,44 @@ const TaskList: React.FC = () => {
   const [patchTask] = useUpdateTaskMutation();
   const [deleteTask] = useDeleteTaskMutation();
 
-  const handleToggleImportant = useCallback(
-    async (taskId: number, currentIsImportant: boolean, isCompleted: boolean) => {
-      if (isCompleted) return;
+  const handleToggleImportant = async (taskId: number, currentIsImportant: boolean, isCompleted: boolean) => {
+    if (isCompleted) return;
 
-      try {
-        await patchTask({
-          id: taskId,
-          data: { isImportant: !currentIsImportant },
-        }).unwrap();
-        showToast(!currentIsImportant ? 'Задача отмечена как важная' : 'Задача больше не важная', 'success');
-      } catch (error) {
-        showToast('Ошибка при изменении важности задачи', 'error');
-      }
-    },
-    [patchTask, showToast]
-  );
+    try {
+      await patchTask({
+        id: taskId,
+        data: { isImportant: !currentIsImportant },
+      }).unwrap();
+      showToast(!currentIsImportant ? 'Задача отмечена как важная' : 'Задача больше не важная', 'success');
+    } catch (error) {
+      showToast('Ошибка при изменении важности задачи', 'error');
+    }
+  };
 
-  const handleToggleCompleted = useCallback(
-    async (taskId: number, currentIsCompleted: boolean) => {
-      try {
-        await patchTask({
-          id: taskId,
-          data: { isCompleted: !currentIsCompleted },
-        }).unwrap();
-        showToast(!currentIsCompleted ? 'Задача выполнена' : 'Задача активна', 'success');
-      } catch (error) {
-        showToast('Ошибка при изменении статуса задачи', 'error');
-      }
-    },
-    [patchTask, showToast]
-  );
+  const handleToggleCompleted = async (taskId: number, currentIsCompleted: boolean) => {
+    try {
+      await patchTask({
+        id: taskId,
+        data: { isCompleted: !currentIsCompleted },
+      }).unwrap();
+      showToast(!currentIsCompleted ? 'Задача выполнена' : 'Задача активна', 'success');
+    } catch (error) {
+      showToast('Ошибка при изменении статуса задачи', 'error');
+    }
+  };
 
-  const handleDelete = useCallback(
-    async (taskId: number) => {
-      try {
-        await deleteTask(taskId).unwrap();
-        showToast('Задача успешно удалена', 'success');
-      } catch (error) {
-        showToast('Ошибка при удалении задачи', 'error');
-      }
-    },
-    [deleteTask, showToast]
-  );
+  const handleDelete = async (taskId: number) => {
+    try {
+      await deleteTask(taskId).unwrap();
+      showToast('Задача успешно удалена', 'success');
+    } catch (error) {
+      showToast('Ошибка при удалении задачи', 'error');
+    }
+  };
+
+  const handleFilterChange = useCallback((newFilter: TaskFilterParams) => {
+    setFilter(newFilter);
+  }, []);
 
   if (isLoading) {
     return (
@@ -80,7 +75,7 @@ const TaskList: React.FC = () => {
             Создать задачу
           </Button>
         </PageHeader>
-        <TaskFilter onFilterChange={setFilter} />
+        <TaskFilter onFilterChange={handleFilterChange} />
         <TaskGrid>
           {Array.from({ length: 6 }).map((_, index) => (
             <TaskSkeleton key={index} />
@@ -124,7 +119,7 @@ const TaskList: React.FC = () => {
         </Button>
       </PageHeader>
 
-      <TaskFilter onFilterChange={setFilter} />
+      <TaskFilter onFilterChange={handleFilterChange} />
 
       <Box aria-labelledby="tasks-heading">
         <HiddenHeading variant="h2" id="tasks-heading">
