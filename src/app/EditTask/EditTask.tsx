@@ -43,6 +43,12 @@ const EditTask: React.FC = () => {
     watch,
   } = useForm<editTaskData>({
     resolver: yupResolver(editTaskSchema),
+    defaultValues: {
+      name: '',
+      info: '',
+      isImportant: false,
+      isCompleted: false,
+    },
   });
 
   const isCompleted = watch('isCompleted');
@@ -50,10 +56,10 @@ const EditTask: React.FC = () => {
   useEffect(() => {
     if (task) {
       reset({
-        name: task.name,
-        info: task.info,
-        isImportant: task.isImportant,
-        isCompleted: task.isCompleted,
+        name: task.name || '',
+        info: task.info || '',
+        isImportant: Boolean(task.isImportant),
+        isCompleted: Boolean(task.isCompleted),
       });
     }
   }, [task, reset]);
@@ -181,7 +187,13 @@ const EditTask: React.FC = () => {
               control={control}
               render={({ field }) => (
                 <StyledFormControlLabel
-                  control={<Checkbox {...field} checked={field.value} disabled={isCompleted} />}
+                  control={
+                    <Checkbox
+                      {...field}
+                      checked={Boolean(field.value)} // Явно преобразуем в boolean
+                      disabled={isCompleted}
+                    />
+                  }
                   label="Важная задача"
                 />
               )}
@@ -190,7 +202,10 @@ const EditTask: React.FC = () => {
               name="isCompleted"
               control={control}
               render={({ field }) => (
-                <StyledFormControlLabel control={<Checkbox {...field} checked={field.value} />} label="Выполнена" />
+                <StyledFormControlLabel
+                  control={<Checkbox {...field} checked={Boolean(field.value)} />}
+                  label="Выполнена"
+                />
               )}
             />
           </StyledFormGroup>
